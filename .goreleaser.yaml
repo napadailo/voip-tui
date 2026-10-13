@@ -1,0 +1,39 @@
+# Release of the published tools: a tag vX.Y.Z builds them for Linux and
+# macOS and attaches the archives and checksums to the GitHub release.
+version: 2
+
+project_name: voip-tui
+
+builds:
+  - id: rtpengine-tui
+    main: ./cmd/rtpengine-tui
+    binary: rtpengine-tui
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - id: rtpengine-tui
+    ids: [rtpengine-tui]
+    name_template: "rtpengine-tui_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    files:
+      - README.md
+      - LICENSE
+      - docs/rtpengine-tui.md
+      - docs/rtpengine-tui.ru.md
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+
+release:
+  github:
+    owner: napadailo
+    name: voip-tui

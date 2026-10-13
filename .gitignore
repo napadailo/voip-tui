@@ -1,0 +1,4 @@
+bin/
+dist/
+*.pcap
+.claude/settings.local.json
