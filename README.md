@@ -21,7 +21,7 @@ Nothing is installed on the servers.
 | Tool | Status | Component | Works through | What it shows |
 |---|---|---|---|---|
 | `rtpengine-tui` | available | [rtpengine](https://github.com/sipwise/rtpengine) | listen-cli, the interface of `rtpengine-ctl` | hosts and session counts; sessions and parsed call details (media path, packet rates, one-way audio); the call's log with follow mode; per-call debug; terminate; statistics with JSON export; calls and NG commands by signalling proxy; interfaces and port usage; runtime limits and log levels; `rtpengine.conf` checked against the host's release; signalling templates explained |
-| `opensips-tui` | in development | [OpenSIPS](https://opensips.org) | MI | dialogs, contacts, dispatcher, drouting gateways, rtpengine sets, clusterer, statistics, processes and raw MI |
+| `opensips-tui` | available | [OpenSIPS](https://opensips.org) | MI through `opensips-cli`, `mi_fifo` or `mi_http` | hosts with running and installed versions; dialogs, contacts, dispatcher destinations and drouting gateways, each with a card; ending dialogs, removing contacts, switching destinations and gateways; rtpengine sets; clusterer and sharing tags; status/report; TCP connections; statistics with rates; processes and their log levels; any MI command; views and actions checked against the host's release and loaded modules |
 | `homer-tui` | in development | [Homer 7](https://github.com/sipcapture/homer) | homer-app REST API | call, registration and log search; call flow ladder; QoS from RTCP; PCAP and text export, PCAP import; settings |
 | `asterisk-tui` | planned | [Asterisk](https://www.asterisk.org) | | |
 
@@ -41,6 +41,21 @@ Tools in development are published here once they are ready.
 
 The full documentation: [docs/rtpengine-tui.md](docs/rtpengine-tui.md).
 
+### How opensips-tui connects
+
+`via:` in the host config picks how MI is reached:
+
+| `via` | Path |
+|---|---|
+| `cli` (default) | `opensips-cli -x mi` on the host over SSH |
+| `fifo` | `mi_fifo` on the host over SSH, no opensips-cli needed |
+| `http` | `mi_http` through an SSH tunnel (`ssh -W`) |
+| `direct` | `mi_http` over HTTP from this machine |
+
+The views are the same whatever `via` is. Raw MI commands: `:mi`.
+
+The full documentation: [docs/opensips-tui.md](docs/opensips-tui.md).
+
 These are unofficial tools, not affiliated with Sipwise, OpenSIPS Solutions, QXIP / sipcapture or Sangoma. rtpengine, OpenSIPS, Homer and Asterisk are names of their respective owners.
 
 ## How the tools behave
@@ -57,6 +72,7 @@ Download a binary for Linux or macOS from [Releases](https://github.com/napadail
 
 ```sh
 go install github.com/napadailo/voip-tui/cmd/rtpengine-tui@latest
+go install github.com/napadailo/voip-tui/cmd/opensips-tui@latest
 ```
 
 Or build from a checkout:
@@ -71,9 +87,10 @@ make test
 
 ```sh
 make demo-rtpengine
+make demo-opensips
 ```
 
-It starts emulators of four rtpengine releases and prints the command that connects `rtpengine-tui` to them.
+Each starts emulators of several releases of the component, writes a config for them and prints the command that connects the tool to them.
 
 ## Configuration
 
@@ -112,12 +129,11 @@ themes:
   noc: {base: nord, accent: "#ffaf00"}
 ```
 
-The interface is available in English and Russian; `:lang` switches it, `LANG` sets the default. Not every tool is fully translated yet.
+The interface is available in English and Russian; `:lang` switches it, `LANG` sets the default.
 
 ## Roadmap
 
-- `opensips-tui` and `homer-tui`, then tools for more components;
-- full translation of every tool.
+- `homer-tui`, then tools for more components.
 
 ## Project layout
 

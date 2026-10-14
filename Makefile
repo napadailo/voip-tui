@@ -3,7 +3,7 @@ LDFLAGS := -s -w -X main.version=$(VERSION)
 # every tool in cmd/; each has its emulator in cmd/<tool>-mock
 TOOLS   := $(notdir $(wildcard cmd/*-tui))
 
-.PHONY: build test race install demo-rtpengine demo-gif gen-rtpengine clean
+.PHONY: build test race install demo-rtpengine demo-opensips demo-gif gen-rtpengine clean
 
 # builds the tools and their emulators into bin/
 build:
@@ -25,18 +25,17 @@ install:
 demo-rtpengine: build
 	./bin/rtpengine-tui-mock -fleet -confdir bin/rtpengine-mock-etc
 
+# hosts of different OpenSIPS releases through the emulator; it serves
+# mi_http for the via: direct host, so keep it running
+demo-opensips: build
+	./bin/opensips-tui-mock -confdir bin/opensips-mock-etc
+
 # the README animation: scripts/demo-gif.py drives rtpengine-tui against the
 # emulator, agg (github.com/asciinema/agg) renders the recording
 demo-gif: build
 	python3 scripts/demo-gif.py bin/demo.cast
 	agg --font-family "JetBrains Mono,SF Mono,Menlo,DejaVu Sans Mono" --font-size 14 \
 		--idle-time-limit 4 --last-frame-duration 3 bin/demo.cast docs/demo.gif
-
-ifneq ($(wildcard cmd/opensips-tui),)
-.PHONY: demo-opensips
-demo-opensips: build
-	./bin/opensips-tui -demo
-endif
 
 ifneq ($(wildcard cmd/homer-tui),)
 .PHONY: demo-homer

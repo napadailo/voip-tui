@@ -15,6 +15,16 @@ builds:
     flags: [-trimpath]
     ldflags:
       - -s -w -X main.version={{.Tag}}
+  - id: opensips-tui
+    main: ./cmd/opensips-tui
+    binary: opensips-tui
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w -X main.version={{.Tag}}
 
 archives:
   - id: rtpengine-tui
@@ -26,12 +36,33 @@ archives:
       - LICENSE
       - docs/rtpengine-tui.md
       - docs/rtpengine-tui.ru.md
+  - id: opensips-tui
+    ids: [opensips-tui]
+    name_template: "opensips-tui_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    files:
+      - README.md
+      - LICENSE
+      - docs/opensips-tui.md
+      - docs/opensips-tui.ru.md
 
 checksum:
   name_template: checksums.txt
 
+# commits start with the part they change: "rtpengine-tui: …", "tui: …"
 changelog:
-  sort: asc
+  groups:
+    - title: rtpengine-tui
+      regexp: '^.*?rtpengine-tui:'
+      order: 0
+    - title: opensips-tui
+      regexp: '^.*?opensips-tui:'
+      order: 1
+    - title: Shared framework
+      regexp: '^.*?(tui|tui/theme|i18n):'
+      order: 2
+    - title: Other
+      order: 9
 
 release:
   github:
