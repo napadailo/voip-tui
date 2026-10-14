@@ -214,7 +214,7 @@ func statsText(app *App, st rtpengine.Stats) string {
 		}
 		for _, kv := range cmds {
 			n, _ := strconv.ParseUint(kv.Value, 10, 64)
-			c.KV(kv.Key, fmt.Sprintf("%14s", groupDigits(strconv.FormatUint(n, 10))))
+			c.KVRaw(kv.Key, fmt.Sprintf("%14s", groupDigits(strconv.FormatUint(n, 10))))
 		}
 		tone := theme.Fg
 		if errs > 0 {
@@ -235,7 +235,7 @@ func statsText(app *App, st rtpengine.Stats) string {
 			case pct >= 70:
 				tone = theme.Warn
 			}
-			c.KV(i.Str("name"), tui.Faint(i.Str("address")+" · ")+Tf("ports %s of %s", count(ports, "used"), count(ports, "totals"))+
+			c.KVRaw(i.Str("name"), tui.Faint(i.Str("address")+" · ")+Tf("ports %s of %s", count(ports, "used"), count(ports, "totals"))+
 				tui.Faint(" · ")+tui.Paint(tone, fmt.Sprintf("%.1f%%", pct)))
 		}
 	}
@@ -254,7 +254,7 @@ func statsText(app *App, st rtpengine.Stats) string {
 			if _, ok := t.Num("packets"); ok { // mr11.5+
 				line += tui.Faint("  " + Tf("total %s packets · %s", count(t, "packets"), humanBytes(strconv.FormatUint(t.Int("bytes"), 10))))
 			}
-			c.KV(t.Str("chain"), line)
+			c.KVRaw(t.Str("chain"), line)
 		}
 	}
 	return c.String()

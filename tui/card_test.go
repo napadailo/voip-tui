@@ -3,6 +3,8 @@ package tui
 import (
 	"strings"
 	"testing"
+
+	"github.com/napadailo/voip-tui/i18n"
 )
 
 func TestCardAlignsLabelsPerSection(t *testing.T) {
@@ -20,5 +22,16 @@ func TestCardEscapes(t *testing.T) {
 	out := NewCard("[red]").KV("k", Strong("[x]")).String()
 	if strings.Contains(out, "[red]\n") || !strings.Contains(out, "[red[]") || !strings.Contains(out, "[x[]") {
 		t.Fatalf("title and values must be escaped: %q", out)
+	}
+}
+
+func TestCardKVRawKeepsLabel(t *testing.T) {
+	if err := i18n.Set("ru"); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = i18n.Set("en") })
+	out := StripTags(NewCard("c").Section("S").KV("help", "1").KVRaw("help", "2").String())
+	if !strings.Contains(out, "справка  1") || !strings.Contains(out, "help     2") {
+		t.Fatalf("KV translates the label, KVRaw keeps it: %q", out)
 	}
 }

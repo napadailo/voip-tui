@@ -466,7 +466,7 @@ func interfaceText(i rtpengine.Interface, ver rtpengine.Version) string {
 	if len(i.Extra) > 0 {
 		c.Section(N("Other"))
 		for _, kv := range i.Extra {
-			c.KV(kv.Key, tview.Escape(kv.Value))
+			c.KVRaw(kv.Key, tview.Escape(kv.Value))
 		}
 	}
 	return c.String()

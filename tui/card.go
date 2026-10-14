@@ -13,7 +13,8 @@ import (
 // Card lays out a detail view the same way everywhere: a bold title, a dim
 // line under it, prose, then sections of "label  value" lines with the
 // labels of each section aligned. Labels and section names are translated
-// (mark them with N); values are markup, see Strong, Paint and Faint.
+// (mark them with N), except labels added with KVRaw; values are markup, see
+// Strong, Paint and Faint.
 type Card struct {
 	title string
 	parts []cardPart
@@ -32,6 +33,15 @@ const (
 type cardPart struct {
 	kind        cardKind
 	label, text string
+	raw         bool // the label is data, not translated
+}
+
+// labelText is the label as shown.
+func (p cardPart) labelText() string {
+	if p.raw {
+		return p.label
+	}
+	return T(p.label)
 }
 
 // NewCard starts a card titled title.
@@ -71,6 +81,13 @@ func (c *Card) KV(label, value string) *Card {
 	return c
 }
 
+// KVRaw adds a line whose label is data from the component (a command, a
+// key, an interface name) and is shown as is.
+func (c *Card) KVRaw(label, value string) *Card {
+	c.parts = append(c.parts, cardPart{kind: cardKV, label: label, text: value, raw: true})
+	return c
+}
+
 // Line adds markup in the value column, without a label (continuations,
 // table headers).
 func (c *Card) Line(markup string) *Card {
@@ -99,7 +116,7 @@ func (c *Card) String() string {
 			}
 			b.WriteString("\n")
 		case cardKV:
-			fmt.Fprintf(&b, "  %s%s[-]  %s\n", theme.Tag(theme.InfoKey), tview.Escape(Pad(T(p.label), width)), p.text)
+			fmt.Fprintf(&b, "  %s%s[-]  %s\n", theme.Tag(theme.InfoKey), tview.Escape(Pad(p.labelText(), width)), p.text)
 		case cardLine:
 			fmt.Fprintf(&b, "  %s  %s\n", Pad("", width), p.text)
 		}
@@ -116,7 +133,7 @@ func (c *Card) labelWidth(from int) int {
 			break
 		}
 		if p.kind == cardKV {
-			w = max(w, StrWidth(T(p.label)))
+			w = max(w, StrWidth(p.labelText()))
 		}
 	}
 	return w

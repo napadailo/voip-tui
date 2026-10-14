@@ -628,6 +628,18 @@ func TestLanguageSwitch(t *testing.T) {
 	h.waitFor(`unknown language "xx"`)
 }
 
+// CLI command names are data: the host card shows them untranslated.
+func TestInfoKeepsCommandNames(t *testing.T) {
+	h := start(t, "")
+	t.Cleanup(func() { _ = i18n.Set("en") })
+	h.waitFor("Hosts", "VERSION")
+	h.command("lang ru")
+	h.command("info")
+	h.waitFor("describe new", "e: изменить")
+	h.keys("G")
+	h.waitRe(`terminate\s+да`, `active\s+да`, `debug\s+да`, `help\s+да`)
+}
+
 // The statistics are one panel; the old command names open it too.
 func TestStatsAliases(t *testing.T) {
 	h := start(t, "")

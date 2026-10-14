@@ -59,7 +59,7 @@ func newDescribeView(app *App) View {
 		for _, l := range levels {
 			name := l.Name
 			if name == "" {
-				name = N("log level") // before mr9.5: one level for everything
+				name = T("log level") // before mr9.5: one level for everything
 			}
 			level := tui.Strong(strconv.Itoa(l.Level)) + " " + tui.Faint(rtpengine.LevelName(l.Level))
 			if l.Level >= 7 { // debug floods the log on a busy host
@@ -68,7 +68,7 @@ func newDescribeView(app *App) View {
 			if l.Desc != "" {
 				level += tui.Faint("  " + l.Desc)
 			}
-			card.KV(name, level)
+			card.KVRaw(name, level)
 		}
 
 		card.Section(N("CLI commands"), i.Caps.Source)
@@ -77,7 +77,7 @@ func newDescribeView(app *App) View {
 			if i.Caps.Has(cmd) {
 				mark = tui.Paint(theme.OK, T("yes"))
 			}
-			card.KV(cmd, mark+tui.Faint("  "+Tf("since %s", rtpengine.Since(cmd))))
+			card.KVRaw(cmd, mark+tui.Faint("  "+Tf("since %s", rtpengine.Since(cmd))))
 		}
 		v.SetContent(card.String(), "markup")
 	}
