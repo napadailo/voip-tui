@@ -635,7 +635,9 @@ func TestInfoKeepsCommandNames(t *testing.T) {
 	h.waitFor("Hosts", "VERSION")
 	h.command("lang ru")
 	h.command("info")
-	h.waitFor("describe new", "e: изменить")
+	// the log levels load after the card opens and make it longer: wait for
+	// them, or G lands above the end
+	h.waitFor("describe new", "e: изменить", "core")
 	h.keys("G")
 	h.waitRe(`terminate\s+да`, `active\s+да`, `debug\s+да`, `help\s+да`)
 }
