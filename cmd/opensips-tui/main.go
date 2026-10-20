@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime/debug"
 
 	"github.com/napadailo/voip-tui/i18n"
 	"github.com/napadailo/voip-tui/internal/opensips/config"
@@ -14,6 +15,14 @@ import (
 )
 
 var version = "dev"
+
+// go install module@version does not pass -ldflags; the module version
+// recorded in the binary stands in for it.
+func init() {
+	if bi, ok := debug.ReadBuildInfo(); ok && version == "dev" && bi.Main.Version != "" && bi.Main.Version != "(devel)" {
+		version = bi.Main.Version
+	}
+}
 
 const sampleConfig = `currentHost: edge-n1  # the host to start on, default: the first one
 refreshSeconds: 5
