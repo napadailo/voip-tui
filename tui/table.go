@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cmp"
 	"fmt"
 	"regexp"
 	"sort"
@@ -52,8 +53,24 @@ type Row struct {
 	CellTones map[int]Tone
 	Color     tcell.Color
 	Colors    []tcell.Color // per cell, 0 = row color
-	Data      any
-	Key       string // stable identity, keeps the cursor across reloads
+	// Markup marks the cells whose text is tview markup, colors inside the
+	// cell ("[red]SEC[-] [yellow]BRK[-]"); width, filter and sort go by the
+	// text without the tags. Other cells are escaped.
+	Markup map[int]bool
+	// Sort is the sort value of a column whose text is not a plain number
+	// ("17k +18", "▄▆█ +79%"); plain numbers sort as numbers by themselves.
+	Sort map[int]float64
+	Data any
+	Key  string // stable identity, keeps the cursor across reloads
+}
+
+// text is cell ci as shown, without markup tags.
+func (r *Row) text(ci int) string {
+	c := cell(r.Cells, ci)
+	if r.Markup[ci] {
+		return StripTags(c)
+	}
+	return c
 }
 
 // color is the color of cell ci: cell tone, cell color, row tone, row color.
@@ -357,7 +374,11 @@ func (t *TableView) matches(r *Row) bool {
 	if t.filterR == nil {
 		return true
 	}
-	hit := t.filterR.MatchString(strings.Join(r.Cells, " "))
+	texts := make([]string, len(r.Cells))
+	for i := range r.Cells {
+		texts[i] = r.text(i)
+	}
+	hit := t.filterR.MatchString(strings.Join(texts, " "))
 	return hit != strings.HasPrefix(t.filter, "!")
 }
 
@@ -381,11 +402,7 @@ func (t *TableView) render() {
 	if t.sortCol >= 0 {
 		col, asc := t.sortCol, t.sortAsc
 		sort.SliceStable(t.visible, func(a, b int) bool {
-			c := compareCells(cell(t.rows[t.visible[a]].Cells, col), cell(t.rows[t.visible[b]].Cells, col))
-			if asc {
-				return c < 0
-			}
-			return c > 0
+			return sortLess(&t.rows[t.visible[a]], &t.rows[t.visible[b]], col, asc)
 		})
 	}
 	widths := make([]int, len(t.headers))
@@ -396,8 +413,12 @@ func (t *TableView) render() {
 		r := &t.rows[ri]
 		mark := t.marked[r.Key]
 		for ci := range t.headers {
-			widths[ci] = max(widths[ci], min(StrWidth(cell(r.Cells, ci)), maxCellWidth))
-			c := tview.NewTableCell(tview.Escape(cell(r.Cells, ci))).SetTextColor(r.color(ci)).SetExpansion(1).SetMaxWidth(maxCellWidth)
+			widths[ci] = max(widths[ci], min(StrWidth(r.text(ci)), maxCellWidth))
+			text := cell(r.Cells, ci)
+			if !r.Markup[ci] {
+				text = tview.Escape(text)
+			}
+			c := tview.NewTableCell(text).SetTextColor(r.color(ci)).SetExpansion(1).SetMaxWidth(maxCellWidth)
 			if mark {
 				c.SetTextColor(theme.Marked).SetAttributes(tcell.AttrBold)
 			}
@@ -452,19 +473,42 @@ func cell(cells []string, i int) string {
 	return ""
 }
 
-func compareCells(a, b string) int {
-	fa, ea := strconv.ParseFloat(strings.TrimSuffix(a, "%"), 64)
-	fb, eb := strconv.ParseFloat(strings.TrimSuffix(b, "%"), 64)
-	if ea == nil && eb == nil {
-		switch {
-		case fa < fb:
-			return -1
-		case fa > fb:
-			return 1
-		}
-		return 0
+// sortKey is what a cell sorts by: a number (the Sort value or a plain
+// number, "%" allowed), else the text; class 0 numbers, 1 text, 2 empty.
+func sortKey(r *Row, col int) (class int, num float64, text string) {
+	if v, ok := r.Sort[col]; ok {
+		return 0, v, ""
 	}
-	return strings.Compare(strings.ToLower(a), strings.ToLower(b))
+	text = strings.TrimSpace(r.text(col))
+	if text == "" {
+		return 2, 0, ""
+	}
+	if f, err := strconv.ParseFloat(strings.TrimSuffix(text, "%"), 64); err == nil {
+		return 0, f, ""
+	}
+	return 1, 0, strings.ToLower(text)
+}
+
+// sortLess orders rows by a column: numbers, then text, then empty cells.
+// The direction applies within numbers and within text; empty cells stay
+// last both ways, so "most first" does not start with rows lacking data.
+func sortLess(a, b *Row, col int, asc bool) bool {
+	ca, na, ta := sortKey(a, col)
+	cb, nb, tb := sortKey(b, col)
+	if ca != cb {
+		return ca < cb
+	}
+	c := 0
+	switch ca {
+	case 0:
+		c = cmp.Compare(na, nb)
+	case 1:
+		c = strings.Compare(ta, tb)
+	}
+	if asc {
+		return c < 0
+	}
+	return c > 0
 }
 
 func (t *TableView) rowAt(tableRow int) *Row {
