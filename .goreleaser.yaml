@@ -25,6 +25,16 @@ builds:
     flags: [-trimpath]
     ldflags:
       - -s -w -X main.version={{.Tag}}
+  - id: homer-tui
+    main: ./cmd/homer-tui
+    binary: homer-tui
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w -X main.version={{.Tag}}
 
 archives:
   - id: rtpengine-tui
@@ -45,6 +55,15 @@ archives:
       - LICENSE
       - docs/opensips-tui.md
       - docs/opensips-tui.ru.md
+  - id: homer-tui
+    ids: [homer-tui]
+    name_template: "homer-tui_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    files:
+      - README.md
+      - LICENSE
+      - docs/homer-tui.md
+      - docs/homer-tui.ru.md
 
 checksum:
   name_template: checksums.txt
@@ -58,9 +77,12 @@ changelog:
     - title: opensips-tui
       regexp: '^.*?opensips-tui:'
       order: 1
+    - title: homer-tui
+      regexp: '^.*?homer-tui:'
+      order: 2
     - title: Shared framework
       regexp: '^.*?(tui|tui/theme|i18n):'
-      order: 2
+      order: 3
     - title: Other
       order: 9
 

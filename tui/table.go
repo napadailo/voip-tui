@@ -295,6 +295,12 @@ func (t *TableView) SetRows(rows []Row) {
 	t.selectKey(cur)
 }
 
+// SetSort sorts by column col, ascending or not; -1 is the natural order.
+func (t *TableView) SetSort(col int, asc bool) {
+	t.sortCol, t.sortAsc = col, asc
+	t.render()
+}
+
 // SetHeaders replaces the column headers (call SetRows after it).
 func (t *TableView) SetHeaders(h []string) {
 	t.headers = h

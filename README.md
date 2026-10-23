@@ -22,10 +22,10 @@ Nothing is installed on the servers.
 |---|---|---|---|---|
 | `rtpengine-tui` | available | [rtpengine](https://github.com/sipwise/rtpengine) | listen-cli, the interface of `rtpengine-ctl` | hosts and session counts; sessions and parsed call details (media path, packet rates, one-way audio); the call's log with follow mode; per-call debug; terminate; statistics with JSON export; calls and NG commands by signalling proxy; interfaces and port usage; runtime limits and log levels; `rtpengine.conf` checked against the host's release; signalling templates explained |
 | `opensips-tui` | available | [OpenSIPS](https://opensips.org) | MI through `opensips-cli`, `mi_fifo` or `mi_http` | hosts with running and installed versions; dialogs, contacts, dispatcher destinations and drouting gateways, each with a card; ending dialogs, removing contacts, switching destinations and gateways; rtpengine sets; clusterer and sharing tags; status/report; TCP connections; statistics with rates; processes and their log levels; any MI command; views and actions checked against the host's release and loaded modules |
-| `homer-tui` | in development | [Homer 7](https://github.com/sipcapture/homer) | homer-app REST API | call, registration and log search; call flow ladder; QoS from RTCP; PCAP and text export, PCAP import; settings |
+| `homer-tui` | available | [Homer 7](https://github.com/sipcapture/homer) | homer-app REST API, the one the Homer web interface uses | several Homer instances with their login state; call, registration and log search with filters and a search form; calls grouped by session, each with a card; the call as a ladder diagram, unfolded when it comes back through the same hosts, its messages, QoS from RTCP drawn as the media path with MOS and loss per hop and where the trouble starts, and logs; PCAP and text export, PCAP import; Homer settings: aliases, users, API tokens, mappings and more |
 | `asterisk-tui` | planned | [Asterisk](https://www.asterisk.org) | | |
 
-Tools in development are published here once they are ready.
+Planned tools are published here once they are ready.
 
 ### How rtpengine-tui connects
 
@@ -56,6 +56,12 @@ The views are the same whatever `via` is. Raw MI commands: `:mi`.
 
 The full documentation: [docs/opensips-tui.md](docs/opensips-tui.md).
 
+### How homer-tui connects
+
+homer-tui talks HTTP(S) to homer-app, with a username and a password (a JWT it renews) or with an API token. Nothing goes over SSH and nothing runs on the Homer host. Several instances can be configured side by side; each logs in in the background, and the host list shows which one does not let in or does not answer.
+
+The full documentation: [docs/homer-tui.md](docs/homer-tui.md).
+
 These are unofficial tools, not affiliated with Sipwise, OpenSIPS Solutions, QXIP / sipcapture or Sangoma. rtpengine, OpenSIPS, Homer and Asterisk are names of their respective owners.
 
 ## How the tools behave
@@ -73,6 +79,7 @@ Download a binary for Linux or macOS from [Releases](https://github.com/napadail
 ```sh
 go install github.com/napadailo/voip-tui/cmd/rtpengine-tui@latest
 go install github.com/napadailo/voip-tui/cmd/opensips-tui@latest
+go install github.com/napadailo/voip-tui/cmd/homer-tui@latest
 ```
 
 Or build from a checkout:
@@ -88,6 +95,7 @@ make test
 ```sh
 make demo-rtpengine
 make demo-opensips
+make demo-homer
 ```
 
 Each starts emulators of several releases of the component, writes a config for them and prints the command that connects the tool to them.
@@ -133,7 +141,7 @@ The interface is available in English and Russian; `:lang` switches it, `LANG` s
 
 ## Roadmap
 
-- `homer-tui`, then tools for more components.
+- tools for more components, `asterisk-tui` first.
 
 ## Project layout
 

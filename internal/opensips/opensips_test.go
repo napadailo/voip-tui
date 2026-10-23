@@ -212,16 +212,20 @@ func TestMockDemoConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = srv.Process.Kill(); _ = srv.Wait() })
+	// the emulator writes the config once it listens; under the load of
+	// the other tests that takes a while, and a file half written does not
+	// load yet
 	path := filepath.Join(dir, "opensips-tui.yaml")
-	for i := 0; i < 100; i++ {
-		if _, err := os.Stat(path); err == nil {
+	var cfg *config.Config
+	for deadline := time.Now().Add(30 * time.Second); ; time.Sleep(50 * time.Millisecond) {
+		c, err := config.Load(path)
+		if err == nil && len(c.Hosts) > 0 {
+			cfg = c
 			break
 		}
-		time.Sleep(50 * time.Millisecond)
-	}
-	cfg, err := config.Load(path)
-	if err != nil {
-		t.Fatal(err)
+		if time.Now().After(deadline) {
+			t.Fatalf("no config from the emulator in %s: %v", path, err)
+		}
 	}
 	if len(cfg.Hosts) != 10 || cfg.SSH.Command != bin || cfg.CurrentHost != "edge-n1" {
 		t.Fatalf("%d hosts, ssh %q, current %q", len(cfg.Hosts), cfg.SSH.Command, cfg.CurrentHost)

@@ -3,7 +3,7 @@ LDFLAGS := -s -w -X main.version=$(VERSION)
 # every tool in cmd/; each has its emulator in cmd/<tool>-mock
 TOOLS   := $(notdir $(wildcard cmd/*-tui))
 
-.PHONY: build test race install demo-rtpengine demo-opensips demo-gif gen-rtpengine clean
+.PHONY: build test race install demo-rtpengine demo-opensips demo-homer demo-gif gen-rtpengine clean
 
 # builds the tools and their emulators into bin/
 build:
@@ -30,18 +30,16 @@ demo-rtpengine: build
 demo-opensips: build
 	./bin/opensips-tui-mock -confdir bin/opensips-mock-etc
 
+# a homer-app emulator with generated calls; keep it running
+demo-homer: build
+	./bin/homer-tui-mock -listen 127.0.0.1:9080 -confdir bin/homer-mock-etc -quiet
+
 # the README animation: scripts/demo-gif.py drives rtpengine-tui against the
 # emulator, agg (github.com/asciinema/agg) renders the recording
 demo-gif: build
 	python3 scripts/demo-gif.py bin/demo.cast
 	agg --font-family "JetBrains Mono,SF Mono,Menlo,DejaVu Sans Mono" --font-size 14 \
 		--idle-time-limit 4 --last-frame-duration 3 bin/demo.cast docs/demo.gif
-
-ifneq ($(wildcard cmd/homer-tui),)
-.PHONY: demo-homer
-demo-homer: build
-	./bin/homer-tui-mock -listen 127.0.0.1:9080
-endif
 
 # Regenerates the per-version rtpengine option and NG flag tables from sipwise/rtpengine sources.
 gen-rtpengine:

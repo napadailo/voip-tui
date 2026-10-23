@@ -224,7 +224,7 @@ func TestCards(t *testing.T) {
 	h.key(tcell.KeyEsc)
 	// an open card follows :lang
 	h.command("dialogs")
-	h.waitRe(`Dialogs\[\d+\] edge-n1`)
+	h.waitRe(`Dialogs\[[1-9]\d*\] edge-n1`) // rows loaded, d has one to open
 	h.keys("d")
 	h.waitFor("Caller")
 	h.command("lang ru")

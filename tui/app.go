@@ -42,6 +42,14 @@ type View interface {
 	Close()
 }
 
+// BackHandler views take esc and q first, to leave a pane of their own
+// before the view is closed; Back reports whether it did.
+type BackHandler interface{ Back() bool }
+
+// CtrlCHandler views take ctrl-c first, for a key of their own, as a form
+// clears with it; CtrlC reports whether it did. Elsewhere ctrl-c quits.
+type CtrlCHandler interface{ CtrlC() bool }
+
 // AutoRefresher views are refreshed on every tick while on top.
 type AutoRefresher interface{ AutoRefresh() bool }
 
@@ -461,6 +469,9 @@ func (a *App) Pop() {
 
 func (a *App) capture(ev *tcell.EventKey) *tcell.EventKey {
 	if ev.Key() == tcell.KeyCtrlC {
+		if c, ok := a.Top().(CtrlCHandler); ok && !a.modalOpen && !a.prompt.HasFocus() && c.CtrlC() {
+			return nil
+		}
 		a.Stop()
 		return nil
 	}
@@ -477,7 +488,7 @@ func (a *App) capture(ev *tcell.EventKey) *tcell.EventKey {
 			t.SetFilter("")
 			return nil
 		}
-		a.Pop()
+		a.back()
 		return nil
 	case tcell.KeyCtrlR:
 		if v := a.Top(); v != nil {
@@ -498,11 +509,19 @@ func (a *App) capture(ev *tcell.EventKey) *tcell.EventKey {
 			a.Push(NewHelpView(a))
 			return nil
 		case 'q':
-			a.Pop()
+			a.back()
 			return nil
 		}
 	}
 	return ev
+}
+
+// back leaves a pane of the top view, else the view.
+func (a *App) back() {
+	if b, ok := a.Top().(BackHandler); ok && b.Back() {
+		return
+	}
+	a.Pop()
 }
 
 // Prompt opens the command prompt with text typed in (e.g. "set maxsessions ").
@@ -675,7 +694,7 @@ func (a *App) Modal(text string, buttons []string, done func(label string)) {
 	for i, b := range buttons {
 		shown[i] = T(b)
 	}
-	m := tview.NewModal().SetText(text).AddButtons(shown)
+	m := tview.NewModal().SetText(tview.Escape(text)).AddButtons(shown) // the text has data, no markup
 	m.SetBorderColor(theme.Warn)
 	m.SetBackgroundColor(theme.Bg)
 	m.SetTextColor(theme.Fg)
@@ -799,7 +818,34 @@ func ShortPath(p string) string {
 // safe for a file name) and returns the path.
 func (a *App) SaveFile(name, ext, content string) (string, error) {
 	path := filepath.Join(expandHome(a.DownloadDir), sanitizeFileName(name)+"-"+time.Now().Format("20060102-150405")+ext)
-	return path, os.WriteFile(path, []byte(content), 0o644)
+	return WriteNew(path, []byte(content))
+}
+
+// WriteNew writes data to a new file only its owner reads, as what is
+// saved holds calls and numbers: at path, or with -1, -2… before the
+// extension when a file is there; it never follows a link nor overwrites.
+// It returns the path written.
+func WriteNew(path string, data []byte) (string, error) {
+	ext := filepath.Ext(path)
+	base := strings.TrimSuffix(path, ext)
+	for n := 0; ; n++ {
+		p := path
+		if n > 0 {
+			p = fmt.Sprintf("%s-%d%s", base, n, ext)
+		}
+		f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+		if errors.Is(err, os.ErrExist) && n < 100 {
+			continue
+		}
+		if err != nil {
+			return "", err
+		}
+		if _, err := f.Write(data); err != nil {
+			f.Close()
+			return "", err
+		}
+		return p, f.Close()
+	}
 }
 
 func expandHome(p string) string {
